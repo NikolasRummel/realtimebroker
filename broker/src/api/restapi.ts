@@ -4,7 +4,6 @@ import {TopicStore} from "../store/store";
 import {CONFIG} from "../config";
 
 const app = express();
-const port = CONFIG.restApiPort;
 
 app.use(express.json());
 app.use(cors());
