@@ -1,11 +1,18 @@
 {
   "dependencies": {
     "@grpc/grpc-js": "^1.12.5",
-    "@grpc/proto-loader": "^0.7.13"
+    "@grpc/proto-loader": "^0.7.13",
+    "chalk": "^5.4.1",
+    "figlet": "^1.8.0"
   },
   "devDependencies": {
+    "@types/chalk": "^0.4.31",
+    "@types/figlet": "^1.7.0",
     "@types/node": "^22.10.2",
     "ts-node": "^10.9.2",
     "typescript": "^5.7.2"
+  },
+  "scripts": {
+    "start": "NODE_OPTIONS=\"--no-warnings\" npx ts-node src/server.ts\n"
   }
 }
