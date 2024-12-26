@@ -33,6 +33,8 @@ const subscribeToTopic = (topic: string) => {
 subscribeToTopic('MAIN');
 
 setTimeout(() => {
-    publishMessage('MAIN', 'New user registered!');
-    publishMessage('INFO', 'Server is shutting down in 10 minutes.');
+    publishMessage('MAIN', 'This!');
+    publishMessage('MAIN', 'IS!');
+    publishMessage('MAIN', 'A!');
+    publishMessage('MAIN', 'TEST!');
 }, 1000);

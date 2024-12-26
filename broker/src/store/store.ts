@@ -8,6 +8,43 @@ const topicActivity = new Map<string, { lastUpdated: string; subscriberCount: nu
 const topicSubscriptionDurations: Map<string, Map<string, { startTime: number; duration?: number }>> = new Map();
 
 export const TopicStore = {
+
+    getAllData: () => {
+        const topicSubscriberCounts: Record<string, number> = {};
+
+        topicSubscribers.forEach((subscribers, topic) => {
+            topicSubscriberCounts[topic] = subscribers.length;
+        });
+
+        return {
+            topicSubscriberCounts,
+            topicMessages,
+            topicActivity,
+            topicSubscriptionDurations
+        };
+    },
+
+    getSubscriberCountByTopic: (topic: string): number => {
+        const topicSubscriberCounts: Record<string, number> = {};
+
+        topicSubscribers.forEach((subscribers, topic) => {
+            topicSubscriberCounts[topic] = subscribers.length;
+        });
+
+        return topicSubscriberCounts[topic] || 0;
+    },
+
+
+    getSubscriberCount: (): Record<string, number> => {
+        const topicSubscriberCounts: Record<string, number> = {};
+
+        topicSubscribers.forEach((subscribers, topic) => {
+            topicSubscriberCounts[topic] = subscribers.length;
+        });
+
+        return topicSubscriberCounts;
+    },
+
     getSubscribers: (topic: string): grpc.ServerWritableStream<any, any>[] => {
         return topicSubscribers.get(topic) || [];
     },
@@ -47,13 +84,21 @@ export const TopicStore = {
         topicMessages.delete(topic);
     },
 
-    getActivity: (topic: string): { lastUpdated: string; subscriberCount: number; messageCount: number } | undefined => {
+    getActivity: (topic: string): {
+        lastUpdated: string;
+        subscriberCount: number;
+        messageCount: number
+    } | undefined => {
         return topicActivity.get(topic);
     },
 
-    updateActivity: (topic: string, data: Partial<{ lastUpdated: string; subscriberCount: number; messageCount: number }>) => {
-        const activity = topicActivity.get(topic) || { lastUpdated: '', subscriberCount: 0, messageCount: 0 };
-        topicActivity.set(topic, { ...activity, ...data });
+    updateActivity: (topic: string, data: Partial<{
+        lastUpdated: string;
+        subscriberCount: number;
+        messageCount: number
+    }>) => {
+        const activity = topicActivity.get(topic) || {lastUpdated: '', subscriberCount: 0, messageCount: 0};
+        topicActivity.set(topic, {...activity, ...data});
     },
 
     clearActivity: (topic: string) => {
@@ -68,7 +113,7 @@ export const TopicStore = {
         if (!topicSubscriptionDurations.has(topic)) {
             topicSubscriptionDurations.set(topic, new Map<string, { startTime: number; duration?: number }>());
         }
-        const subscriberData = { startTime: Date.now() };
+        const subscriberData = {startTime: Date.now()};
         topicSubscriptionDurations.get(topic)?.set(subscriberId, subscriberData);
     },
 
