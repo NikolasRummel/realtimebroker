@@ -13,15 +13,19 @@ import {
     SidebarProvider,
     SidebarTrigger,
 } from "@/components/ui/sidebar"
-import {getDashboardData, getSubscribersByTopic, getTotalSubscribers} from "@/lib/api";
+import {getDashboardData, getMessages, getMessagesOrdered, getTopics, getTotalSubscribers} from "@/lib/api";
+import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
+import {UserIcon} from "lucide-react";
+import MessageChart from "@/components/charts/message-chart";
 
 export default async function Page() {
 
     const data = await getDashboardData();
+    const topics = await getTopics();
+    const messages = await getMessagesOrdered();
 
-    const total = await getTotalSubscribers()
-    const main = await getSubscribersByTopic("MAIN")
-    const b = await getSubscribersByTopic("b")
+    const total = Object.values(await getTotalSubscribers()).reduce((sum, count) => sum + count, 0);
+
 
     return (
         <SidebarProvider>
@@ -51,18 +55,29 @@ export default async function Page() {
                 <div className={"mb-20"}>
                     {JSON.stringify(data)}
                 </div>
-
                 <div className={"mb-20"}>
-                    {JSON.stringify(total)}
+                    {JSON.stringify(topics.topics)}
                 </div>
-
                 <div className={"mb-20"}>
-                    {JSON.stringify(b)}
+                    {JSON.stringify(messages)}
+                </div>
+                <div className={"mb-20"}>
+                    <MessageChart/>
                 </div>
 
                 <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
                     <div className="grid auto-rows-min gap-4 md:grid-cols-3">
-                        <div className="aspect-video rounded-xl bg-muted/50"/>
+                        <Card>
+                            <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
+                                <CardTitle className='text-sm font-medium'>
+                                    Connected Subscribers
+                                </CardTitle>
+                                <UserIcon/>
+                            </CardHeader>
+                            <CardContent>
+                                <div className='text-2xl font-bold'>{total}</div>
+                            </CardContent>
+                        </Card>
                         <div className="aspect-video rounded-xl bg-muted/50"/>
                         <div className="aspect-video rounded-xl bg-muted/50"/>
                     </div>

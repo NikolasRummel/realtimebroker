@@ -31,10 +31,45 @@ const subscribeToTopic = (topic: string) => {
 };
 
 subscribeToTopic('MAIN');
+subscribeToTopic('INFO');
 
-setTimeout(() => {
-    publishMessage('MAIN', 'This!');
-    publishMessage('MAIN', 'IS!');
-    publishMessage('MAIN', 'A!');
-    publishMessage('MAIN', 'TEST!');
-}, 1000);
+const publishMessages = async () => {
+    while (true) {
+        const randomString = generateRandomString(10); // Change the length as needed
+        publishMessage('MAIN', randomString);
+
+        // Wait for a random delay between 100ms and 10,000ms
+        const delay = getRandomInt(100, 10000);
+        console.log(`Next message will be published in ${delay}ms`);
+
+        // Wait for the random delay before publishing the next message
+        await new Promise(resolve => setTimeout(resolve, delay));
+
+        const randomString2 = generateRandomString(10); // Change the length as needed
+        publishMessage('INFO', randomString2);
+
+        // Wait for a random delay between 100ms and 10,000ms
+        const delay2 = getRandomInt(100, 10000);
+        console.log(`Next message will be published in ${delay2}ms`);
+
+        // Wait for the random delay before publishing the next message
+        await new Promise(resolve => setTimeout(resolve, delay2));
+    }
+};
+
+// Start publishing messages
+publishMessages();
+
+function getRandomInt(min: number, max: number): number {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+// Function to generate a random string
+function generateRandomString(length = 10) {
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    const charactersLength = characters.length;
+    for (let i = 0; i < length; i++) {
+        result += characters.charAt(Math.floor(Math.random() * charactersLength));
+    }
+    return result;
+}

@@ -2,22 +2,27 @@ import axios, { AxiosError } from 'axios';
 
 const API_BASE_URL = 'http://localhost:50052';
 
-interface SubscriberResponse {
+export interface SubscriberResponse {
     topic: string;
     subscribers: number;
 }
 
-interface MessageResponse {
-    topic: string;
-    messages: string[];
+export interface Message {
+    message: string;
+    timestamp: string;
 }
 
-interface ActivityResponse {
+export interface MessageResponse {
+    topic: string;
+    messages: Message[];
+}
+
+export interface ActivityResponse {
     topic: string;
     activity: { lastUpdated: string; subscriberCount: number; messageCount: number };
 }
 
-interface SuccessResponse {
+export interface SuccessResponse {
     message: string;
 }
 
@@ -46,7 +51,7 @@ export const getTopics = async (): Promise<{ topics: string[] }> => {
 export const getTotalSubscribers = async (): Promise<number> => {
     try {
         const response = await axios.get(`${API_BASE_URL}/topics/subscribers`);
-        return response.data;
+        return response.data.subscribers;
     } catch (error) {
         const axiosError = error as AxiosError;
         console.error('Error fetching total subscribers:', axiosError.response?.data || axiosError.message);
@@ -65,7 +70,29 @@ export const getSubscribersByTopic = async (topic: string): Promise<number> => {
     }
 };
 
-export const getMessages = async (topic: string): Promise<MessageResponse | { message: string }> => {
+export const getMessages = async (): Promise<MessageResponse[]> => {
+    try {
+        const response = await axios.get(`${API_BASE_URL}/topics/messages`);
+        return response.data;
+    } catch (error) {
+        const axiosError = error as AxiosError;
+        console.error('Error fetching messages:', axiosError.response?.data || axiosError.message);
+        throw error;
+    }
+}
+export const getMessagesOrdered = async (): Promise<Message[]> => {
+    try {
+        const response = await axios.get(`${API_BASE_URL}/topics/messages/ordered`);
+        return response.data;
+    } catch (error) {
+        const axiosError = error as AxiosError;
+        console.error('Error fetching messages:', axiosError.response?.data || axiosError.message);
+        throw error;
+    }
+}
+
+
+export const getMessagesByTopic = async (topic: string): Promise<MessageResponse | { message: string }> => {
     try {
         const response = await axios.get(`${API_BASE_URL}/topics/${topic}/messages`);
         return response.data;

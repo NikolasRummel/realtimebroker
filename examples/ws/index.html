@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Client</title>
+</head>
+<body>
+<h1>WebSocket Client</h1>
+<input type="text" id="topicInput" placeholder="Enter topic" />
+<input type="text" id="messageInput" placeholder="Enter message" />
+<button onclick="subscribe()">Subscribe</button>
+<button onclick="publish()">Publish</button>
+
+<script>
+    // Create WebSocket connection
+    const ws = new WebSocket('ws://localhost:50053');
+
+    // Connection open event
+    ws.onopen = () => {
+        console.log('Connected to WebSocket server');
+    };
+
+    // Message from the server
+    ws.onmessage = (event) => {
+        alert(event.data);
+        console.log('Message from server:', event.data);
+    };
+
+    // Send subscribe message in JSON format
+    function subscribe() {
+        const topic = document.getElementById('topicInput').value;
+
+        const subscribeMessage = {
+            command: "SUBSCRIBE",
+            topic: topic
+        };
+
+        ws.send(JSON.stringify(subscribeMessage));  // Send JSON message
+    }
+
+    // Send publish message in JSON format
+    function publish() {
+        const topic = document.getElementById('topicInput').value;
+        const message = document.getElementById('messageInput').value;
+
+        const publishMessage = {
+            command: "PUBLISH",
+            topic: topic,
+            msg: message
+        };
+
+        ws.send(JSON.stringify(publishMessage));  // Send JSON message
+    }
+</script>
+</body>
+</html>

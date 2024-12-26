@@ -1,103 +1,157 @@
 import * as grpc from '@grpc/grpc-js';
+import WebSocket from 'ws'; // Import the WebSocket type from ws package
 
-const MAX_MESSAGES = 10;
+const MAX_MESSAGES = 1000;
 
-const topicSubscribers = new Map<string, grpc.ServerWritableStream<any, any>[]>();
-const topicMessages = new Map<string, string[]>();
-const topicActivity = new Map<string, { lastUpdated: string; subscriberCount: number; messageCount: number }>();
-const topicSubscriptionDurations: Map<string, Map<string, { startTime: number; duration?: number }>> = new Map();
+// Types
+interface TopicActivity {
+    lastUpdated: string;
+    subscriberCount: number;
+    messageCount: number;
+}
+
+interface SubscriptionDuration {
+    startTime: number;
+    duration?: number;
+}
+
+interface MessageWithTimestamp {
+    message: string;
+    timestamp: string;
+}
+
+// Maps to store data
+const topicSubscribers: Map<string, grpc.ServerWritableStream<any, any>[]> = new Map();
+const topicMessages: Map<string, MessageWithTimestamp[]> = new Map();
+const topicActivity: Map<string, TopicActivity> = new Map();
+const topicSubscriptionDurations: Map<string, Map<string, SubscriptionDuration>> = new Map();
+const topicWsSubscribers: Map<string, Set<WebSocket>> = new Map();
 
 export const TopicStore = {
+    // ------------------- General Methods -------------------
 
-    getAllData: () => {
-        const topicSubscriberCounts: Record<string, number> = {};
+    getAllData: () => ({
+        topicSubscriberCounts: Array.from(topicSubscribers.entries()).reduce(
+            (acc, [topic, subscribers]) => {
+                acc[topic] = subscribers.length;
+                return acc;
+            },
+            {} as Record<string, number>
+        ),
+        topicMessages,
+        topicActivity,
+        topicSubscriptionDurations,
+    }),
 
-        topicSubscribers.forEach((subscribers, topic) => {
-            topicSubscriberCounts[topic] = subscribers.length;
-        });
-
-        return {
-            topicSubscriberCounts,
-            topicMessages,
-            topicActivity,
-            topicSubscriptionDurations
-        };
+    getAllMessages: (): Map<string, MessageWithTimestamp[]> => {
+        return topicMessages;
     },
 
-    getSubscriberCountByTopic: (topic: string): number => {
-        const topicSubscriberCounts: Record<string, number> = {};
-
-        topicSubscribers.forEach((subscribers, topic) => {
-            topicSubscriberCounts[topic] = subscribers.length;
-        });
-
-        return topicSubscriberCounts[topic] || 0;
+    getAllMessagesOrderedByTimestamp: (): MessageWithTimestamp[] => {
+        return Array.from(topicMessages.values())
+            .flat() // Flatten the arrays of messages
+            .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
     },
 
-
-    getSubscriberCount: (): Record<string, number> => {
-        const topicSubscriberCounts: Record<string, number> = {};
-
-        topicSubscribers.forEach((subscribers, topic) => {
-            topicSubscriberCounts[topic] = subscribers.length;
-        });
-
-        return topicSubscriberCounts;
-    },
-
-    getSubscribers: (topic: string): grpc.ServerWritableStream<any, any>[] => {
-        return topicSubscribers.get(topic) || [];
-    },
-
-    addSubscriber: (topic: string, subscriber: grpc.ServerWritableStream<any, any>) => {
-        const subscribers = topicSubscribers.get(topic) || [];
-        subscribers.push(subscriber);
-        topicSubscribers.set(topic, subscribers);
-    },
-
-    removeSubscriber: (topic: string, subscriber: grpc.ServerWritableStream<any, any>) => {
-        const subscribers = topicSubscribers.get(topic);
-        if (subscribers) {
-            topicSubscribers.set(
-                topic,
-                subscribers.filter(sub => sub !== subscriber)
-            );
-        }
-    },
-
-    getMessages: (topic: string): string[] => {
+    getMessages: (topic: string): MessageWithTimestamp[] => {
         return topicMessages.get(topic) || [];
     },
 
-    addMessage: (topic: string, message: string) => {
-        const messages = topicMessages.get(topic) || [];
-
-        if (messages.length >= MAX_MESSAGES) {
-            messages.shift();
+    saveMessage: (topic: string, message: string) => {
+        // Ensure the topic exists in the message store
+        if (!topicMessages.has(topic)) {
+            topicMessages.set(topic, []);
         }
 
-        messages.push(message);
-        topicMessages.set(topic, messages);
+        const messages = topicMessages.get(topic)!;
+
+        // If the topic exceeds the max messages, remove the oldest one
+        if (messages.length >= MAX_MESSAGES) {
+            messages.shift(); // Remove the oldest message
+        }
+
+        // Create the message with timestamp
+        const messageWithTimestamp = {
+            message,
+            timestamp: new Date().toISOString(),
+        };
+
+        // Push the new message to the topic's message array
+        messages.push(messageWithTimestamp);
+
+        console.log(`Message saved for topic: ${topic}`);
     },
 
-    clearMessages: (topic: string) => {
-        topicMessages.delete(topic);
+    getSubscriberCountByTopic: (topic: string): number =>
+        topicSubscribers.get(topic)?.length || 0,
+
+    getSubscriberCount: (): Record<string, number> =>
+        Array.from(topicSubscribers.entries()).reduce(
+            (acc, [topic, subscribers]) => {
+                acc[topic] = subscribers.length;
+                return acc;
+            },
+            {} as Record<string, number>
+        ),
+
+    getAllTopics: (): string[] => Array.from(topicSubscribers.keys()),
+
+    clearAllData: () => {
+        topicSubscribers.forEach((subscribers) => {
+            subscribers.forEach((sub) => sub.end()); // End all subscriber streams
+        });
+        topicSubscribers.clear();
+        topicMessages.clear();
+        topicActivity.clear();
+        topicSubscriptionDurations.clear();
+        console.log('Cleared all topic data.');
     },
 
-    getActivity: (topic: string): {
-        lastUpdated: string;
-        subscriberCount: number;
-        messageCount: number
-    } | undefined => {
-        return topicActivity.get(topic);
+    // ------------------- gRPC Methods -------------------
+
+    grpcAddSubscriber: (topic: string, subscriber: grpc.ServerWritableStream<any, any>) => {
+        if (!topicSubscribers.has(topic)) {
+            topicSubscribers.set(topic, []);
+        }
+        topicSubscribers.get(topic)!.push(subscriber);
     },
 
-    updateActivity: (topic: string, data: Partial<{
-        lastUpdated: string;
-        subscriberCount: number;
-        messageCount: number
-    }>) => {
-        const activity = topicActivity.get(topic) || {lastUpdated: '', subscriberCount: 0, messageCount: 0};
+    grpcRemoveSubscriber: (topic: string, subscriber: grpc.ServerWritableStream<any, any>) => {
+        if (!topicSubscribers.has(topic)) return;
+        topicSubscribers.set(
+            topic,
+            topicSubscribers.get(topic)!.filter((sub) => sub !== subscriber)
+        );
+    },
+
+    // ------------------- WebSocket Methods -------------------
+
+    wsAddSubscriber: (topic: string, ws: WebSocket) => {
+        if (!topicWsSubscribers.has(topic)) {
+            topicWsSubscribers.set(topic, new Set<WebSocket>());
+        }
+        topicWsSubscribers.get(topic)!.add(ws);
+    },
+
+    wsRemoveSubscriber: (ws: WebSocket) => {
+        topicWsSubscribers.forEach((subscribers, topic) => {
+            if (subscribers.has(ws)) {
+                subscribers.delete(ws);
+            }
+        });
+    },
+
+    // ------------------- Activity and Subscription Methods -------------------
+
+    getActivity: (topic: string): TopicActivity | undefined =>
+        topicActivity.get(topic),
+
+    updateActivity: (topic: string, data: Partial<TopicActivity>) => {
+        const activity = topicActivity.get(topic) || {
+            lastUpdated: '',
+            subscriberCount: 0,
+            messageCount: 0,
+        };
         topicActivity.set(topic, {...activity, ...data});
     },
 
@@ -105,49 +159,40 @@ export const TopicStore = {
         topicActivity.delete(topic);
     },
 
-    getSubscriptionDurations: (topic: string): Map<string, { startTime: number; duration?: number }> | undefined => {
-        return topicSubscriptionDurations.get(topic);
-    },
+    getSubscriptionDurations: (topic: string): Map<string, SubscriptionDuration> | undefined =>
+        topicSubscriptionDurations.get(topic),
 
     addSubscriptionDuration: (topic: string, subscriberId: string) => {
         if (!topicSubscriptionDurations.has(topic)) {
-            topicSubscriptionDurations.set(topic, new Map<string, { startTime: number; duration?: number }>());
+            topicSubscriptionDurations.set(topic, new Map<string, SubscriptionDuration>());
         }
-        const subscriberData = {startTime: Date.now()};
-        topicSubscriptionDurations.get(topic)?.set(subscriberId, subscriberData);
+        topicSubscriptionDurations.get(topic)!.set(subscriberId, {startTime: Date.now()});
     },
 
-    getSubscriptionStartTime: (topic: string, subscriberId: string): number | undefined => {
-        const subscriberData = topicSubscriptionDurations.get(topic)?.get(subscriberId);
-        return subscriberData?.startTime;
-    },
+    getSubscriptionStartTime: (topic: string, subscriberId: string): number | undefined =>
+        topicSubscriptionDurations.get(topic)?.get(subscriberId)?.startTime,
 
     removeSubscriptionDuration: (topic: string, subscriberId: string) => {
-        const subscriberData = topicSubscriptionDurations.get(topic)?.get(subscriberId);
-        if (subscriberData) {
-            const duration = Date.now() - subscriberData.startTime;
-            console.log(`Subscriber ${subscriberId} was connected for ${duration} ms`);
-            subscriberData.duration = duration; // Store the calculated duration
-        }
-        topicSubscriptionDurations.get(topic)?.delete(subscriberId);
+        const durations = topicSubscriptionDurations.get(topic);
+        if (!durations?.has(subscriberId)) return;
+
+        const subscriberData = durations.get(subscriberId)!;
+        subscriberData.duration = Date.now() - subscriberData.startTime; // Calculate and store the duration
+        durations.delete(subscriberId);
     },
 
     clearSubscriptionDurations: (topic: string) => {
         topicSubscriptionDurations.delete(topic);
     },
 
-    getAllTopics: (): string[] => {
-        return Array.from(topicSubscribers.keys());
+    // ------------------- New Methods for Retrieving Subscribers -------------------
+
+    getWsSubscribers: (topic: string): WebSocket[] => {
+        const wsSubscribers = topicWsSubscribers.get(topic);
+        return wsSubscribers ? Array.from(wsSubscribers) : [];
     },
 
-    clearAllData: () => {
-        topicSubscribers.forEach(subscribers => {
-            subscribers.forEach(sub => sub.end());
-        });
-        topicSubscribers.clear();
-        topicMessages.clear();
-        topicActivity.clear();
-        topicSubscriptionDurations.clear();
-        console.log('Cleared all topic data.');
-    }
+    getGrpcSubscribers: (topic: string): grpc.ServerWritableStream<any, any>[] => {
+        return topicSubscribers.get(topic) || [];
+    },
 };
