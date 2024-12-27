@@ -58,7 +58,6 @@ export const TopicStore = {
     },
 
     saveMessage: (topic: string, message: string) => {
-        // Ensure the topic exists in the message store
         if (!topicMessages.has(topic)) {
             topicMessages.set(topic, []);
         }
@@ -67,18 +66,15 @@ export const TopicStore = {
 
         // If the topic exceeds the max messages, remove the oldest one
         if (messages.length >= MAX_MESSAGES) {
-            messages.shift(); // Remove the oldest message
+            messages.shift();
         }
 
-        // Create the message with timestamp
         const messageWithTimestamp = {
             message,
             timestamp: new Date().toISOString(),
         };
 
-        // Push the new message to the topic's message array
         messages.push(messageWithTimestamp);
-
         console.log(`Message saved for topic: ${topic}`);
     },
 
@@ -184,8 +180,6 @@ export const TopicStore = {
     clearSubscriptionDurations: (topic: string) => {
         topicSubscriptionDurations.delete(topic);
     },
-
-    // ------------------- New Methods for Retrieving Subscribers -------------------
 
     getWsSubscribers: (topic: string): WebSocket[] => {
         const wsSubscribers = topicWsSubscribers.get(topic);

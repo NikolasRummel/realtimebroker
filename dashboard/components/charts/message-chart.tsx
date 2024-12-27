@@ -37,14 +37,26 @@ const MessageChart: React.FC = () => {
 
     const chartOptions: Highcharts.Options = {
         chart: {
-            type: 'column',
+            type: 'cawd',
         },
         title: {
             text: 'Real-time Message Timeline'
         },
         xAxis: {
             type: 'datetime',
-            tickPixelInterval: 150
+            tickPixelInterval: 1
+        },
+        legend: {
+            layout: 'vertical',
+            align: 'right',
+            verticalAlign: 'middle'
+        },
+        plotOptions: {
+            series: {
+                label: {
+                    connectorAllowed: false
+                },
+            }
         },
         yAxis: {
             title: {
@@ -58,12 +70,9 @@ const MessageChart: React.FC = () => {
                     `Messages in this ${getTimeSlotLabel(timeSlotSize).toLowerCase()}: ` + this.y;
             }
         },
-        legend: {
-            enabled: false
-        },
         series: [{
             name: 'Messages',
-            type: 'column',
+            type: 'column', //line, spline, area, areaspline, column, bar, pie, scatter,
             data: aggregateMessages(messages, timeSlotSize)
         }]
     };

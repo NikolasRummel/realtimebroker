@@ -43,7 +43,7 @@ const publishMessages = async () => {
         publishMessage('MAIN', JSON.stringify(randomObject));
 
         // Wait for a random delay between 100ms and 10,000ms
-        const delay2 = getRandomInt(50, 100);
+        const delay2 = getRandomInt(20, 1500);
         console.log(`Next message will be published in ${delay2}ms`);
 
         // Wait for the random delay before publishing the next message
