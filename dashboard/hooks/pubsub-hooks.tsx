@@ -1,46 +1,63 @@
-import { useState, useEffect } from 'react';
-import PubSubClient from "@/lib/pubsubclient";
+import { useState, useEffect } from "react";
+import PubSubClient, { PubSubMessage } from "@/lib/pubsubclient";
 
-// Hook to get all messages from a topic
+async function connectAndSubscribe(
+    pubSubClient: PubSubClient,
+    topic: string,
+    messageHandler: (message: PubSubMessage) => void
+) {
+    try {
+        if (!pubSubClient.connected) {
+            await pubSubClient.connect();
+        }
+
+        if (!pubSubClient.isSubscribed(topic)) {
+            pubSubClient.subscribe(topic);
+        }
+
+        // Add listener for messages
+        pubSubClient.on(topic, messageHandler);
+    } catch (error) {
+        console.error("Failed to connect or subscribe:", error);
+    }
+}
+
 export function useMessagesFromTopic(topic: string) {
-    const [messages, setMessages] = useState<string[]>([]);
+    const [messages, setMessages] = useState<PubSubMessage[]>([]);
 
     useEffect(() => {
         const pubSubClient = PubSubClient.getInstance();
 
-        // Ensure the WebSocket connection is established
-        const connectAndSubscribe = async () => {
-            try {
-                await pubSubClient.connect(); // Connect only once
-                pubSubClient.subscribe(topic); // Subscribe to the topic
-
-                // Handle new messages for this topic
-                const handleNewMessage = (message: string) => {
-                    alert("New message: " + message); // Trigger the alert on new message
-                    setMessages((prevMessages) => [...prevMessages, message]); // Update the message state
-                };
-
-                // Listen for incoming messages for the topic
-                pubSubClient.on(topic, handleNewMessage);
-
-                // Cleanup function to unsubscribe when the component unmounts
-                return () => {
-                    pubSubClient.removeListener(topic, handleNewMessage); // Remove listener on cleanup
-                };
-            } catch (error) {
-                console.error('WebSocket connection failed:', error);
-            }
+        const handleNewMessage = (message: PubSubMessage) => {
+            setMessages((prevMessages) => [...prevMessages, message]);
         };
 
-        // Run the async function to connect and subscribe
-        connectAndSubscribe();
+        connectAndSubscribe(pubSubClient, topic, handleNewMessage);
 
-        // Effect cleanup to unsubscribe when the component unmounts
         return () => {
-            pubSubClient.removeListener(topic, () => {}); // Cleanup listener on unmount
+            pubSubClient.removeListener(topic, handleNewMessage);
         };
-
     }, [topic]);
 
     return messages;
+}
+
+export function useLatestMessageFromTopic(topic: string) {
+    const [latestMessage, setLatestMessage] = useState<PubSubMessage | null>(null);
+
+    useEffect(() => {
+        const pubSubClient = PubSubClient.getInstance();
+
+        const handleNewMessage = (message: PubSubMessage) => {
+            setLatestMessage(message);
+        };
+
+        connectAndSubscribe(pubSubClient, topic, handleNewMessage);
+
+        return () => {
+            pubSubClient.removeListener(topic, handleNewMessage);
+        };
+    }, [topic]);
+
+    return latestMessage;
 }

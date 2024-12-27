@@ -13,17 +13,13 @@ import {
     SidebarProvider,
     SidebarTrigger,
 } from "@/components/ui/sidebar"
-import {getDashboardData, getMessages, getMessagesOrdered, getTopics, getTotalSubscribers} from "@/lib/api";
+import {getTotalSubscribers} from "@/lib/api";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {UserIcon} from "lucide-react";
 import MessageChart from "@/components/charts/message-chart";
-import TestPubSubComponent from "@/components/charts/TestPubSubComponent";
 
 export default async function Page() {
 
-    const data = await getDashboardData();
-    const topics = await getTopics();
-    const messages = await getMessagesOrdered();
 
     const total = Object.values(await getTotalSubscribers()).reduce((sum, count) => sum + count, 0);
 
@@ -53,20 +49,8 @@ export default async function Page() {
                     </div>
                 </header>
 
-                <div className={"mb-20"}>
-                    {JSON.stringify(data)}
-                </div>
-                <div className={"mb-20"}>
-                    {JSON.stringify(topics.topics)}
-                </div>
-                <div className={"mb-20"}>
-                    {JSON.stringify(messages)}
-                </div>
-                <div className={"mb-20"}>
 
-                </div>
-
-                <TestPubSubComponent/>
+                <MessageChart/>
                 <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
                     <div className="grid auto-rows-min gap-4 md:grid-cols-3">
                         <Card>

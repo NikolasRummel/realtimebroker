@@ -3,13 +3,8 @@
 import React, { useState, useRef, useCallback } from 'react';
 import Highcharts from 'highcharts';
 import HighchartsReact from 'highcharts-react-official';
-import useMessageStore from "@/lib/messagestore";
-
-interface Message {
-    topic: string;
-    message: string;
-    timestamp: string;
-}
+import {useMessagesFromTopic} from "@/hooks/pubsub-hooks";
+import {PubSubMessage} from "@/lib/pubsubclient";
 
 const TIME_SLOTS = {
     SECOND: 1000,
@@ -18,14 +13,16 @@ const TIME_SLOTS = {
 };
 
 const MessageChart: React.FC = () => {
-    const messages = useMessageStore(state => state.messages);
+    const messages = useMessagesFromTopic("MAIN");
+
+
     const [timeSlotSize, setTimeSlotSize] = useState<number>(TIME_SLOTS.SECOND);
     const chartComponentRef = useRef<HighchartsReact.RefObject>(null);
 
-    const aggregateMessages = useCallback((msgs: Message[], slotSize: number): [number, number][] => {
+    const aggregateMessages = useCallback((msgs: PubSubMessage[], slotSize: number): [number, number][] => {
         const aggregated: { [key: number]: number } = {};
         msgs.forEach(msg => {
-            const timestamp = Math.floor(parseInt(msg.timestamp) / slotSize) * slotSize;
+            const timestamp = Math.floor(parseInt(String(msg.timestamp.getTime() / slotSize)) * slotSize);
             aggregated[timestamp] = (aggregated[timestamp] || 0) + 1;
         });
         return Object.entries(aggregated).map(([timestamp, count]) => [parseInt(timestamp), count]);

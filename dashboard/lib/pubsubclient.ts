@@ -1,10 +1,19 @@
 import { EventEmitter } from 'events';
 
+// Define the PubSubMessage type
+export type PubSubMessage = {
+    topic: string;
+    message: string;
+    timestamp: Date;
+};
+
 class PubSubClient extends EventEmitter {
     static instance: PubSubClient | null = null;
     ws: WebSocket | null = null;
     serverUrl: string;
-    connected: boolean = false;  // Track the connection status
+    connected: boolean = false;
+    subscribedTopics: Set<string> = new Set();
+    subscriptionQueue: string[] = []; // Queue for topics to subscribe to while connecting
 
     private constructor(serverUrl: string) {
         super();
@@ -18,10 +27,8 @@ class PubSubClient extends EventEmitter {
         return PubSubClient.instance;
     }
 
-    // Establish WebSocket connection to the server
     async connect() {
-        if (this.ws) {
-            console.log('Already connected to WebSocket server.');
+        if (this.ws && this.connected) {
             return;
         }
 
@@ -29,71 +36,70 @@ class PubSubClient extends EventEmitter {
             this.ws = new WebSocket(this.serverUrl);
 
             this.ws.onopen = () => {
-                this.connected = true;  // Mark as connected
-                console.log('Connected to WebSocket server');
+                this.connected = true;
+                console.log("WebSocket connected");
+
+                // Process queued subscriptions
+                this.subscriptionQueue.forEach((topic) => this.subscribe(topic));
+                this.subscriptionQueue = []; // Clear the queue
                 resolve();
             };
 
             this.ws.onmessage = (event) => {
-                // Log incoming message for debugging
-                console.log('Message received:', event.data);
-
-                try {
-                    const parsedMessage = JSON.parse(event.data);
-                    console.log('Parsed Message:', parsedMessage);
-
-                    const { topic, message } = parsedMessage;  // Using 'message' from the backend
-                    alert("New message: " + message); // Trigger the alert on new message
-
-                    this.emit(topic, message);
-                } catch (error) {
-                    console.error('Failed to parse message:', error);
+                const parsedMessage: PubSubMessage = JSON.parse(event.data);
+                const { topic, message } = parsedMessage;
+                const pubSubMessage: PubSubMessage = {
+                    topic,
+                    message,
+                    timestamp: new Date(),
                 }
+
+                this.emit(topic, pubSubMessage); // Broadcast to all listeners
             };
 
             this.ws.onerror = (error) => {
-                console.error('WebSocket error:', error);
+                console.error("WebSocket error:", error);
                 reject(error);
             };
 
             this.ws.onclose = () => {
-                console.log('WebSocket connection closed');
-                this.connected = false; // Mark as disconnected
+                console.log("WebSocket closed");
+                this.connected = false;
             };
         });
     }
 
-    // Subscribe to a specific topic
-    subscribe(topic: string) {
-        if (!this.connected) {
-            console.error('WebSocket is not connected.');
-            return;
-        }
-
-        const message = JSON.stringify({
-            command: 'SUBSCRIBE',
-            topic: topic,
-        });
-
-        this.ws?.send(message);
-        console.log(`Subscribed to topic: ${topic}`);
+    isConnected() {
+        return this.connected;
     }
 
-    // Publish a message to a specific topic
-    publish(topic: string, message: string) {
-        if (!this.connected) {
-            console.error('WebSocket is not connected.');
+    isSubscribed(topic: string) {
+        return this.subscribedTopics.has(topic);
+    }
+
+    subscribe(topic: string) {
+        if (this.isSubscribed(topic)) {
+            console.log(`Already subscribed to topic: ${topic}`);
             return;
         }
 
-        const messageData = JSON.stringify({
-            command: 'PUBLISH',
-            topic: topic,
-            msg: message,
-        });
+        if (!this.connected) {
+            console.warn("WebSocket not connected. Queuing subscription.");
+            this.subscriptionQueue.push(topic);
+            return;
+        }
 
-        this.ws?.send(messageData);
-        console.log(`Published message to topic ${topic}: ${message}`);
+        if(this.ws?.readyState === WebSocket.OPEN) {
+            this.ws?.send(
+                JSON.stringify({
+                    command: "SUBSCRIBE",
+                    topic,
+                })
+            );
+
+            this.subscribedTopics.add(topic);
+            console.log(`Subscribed to topic: ${topic}`);
+        }
     }
 }
 
