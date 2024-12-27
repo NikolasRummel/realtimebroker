@@ -25,6 +25,7 @@ export const onPublish = (topic: string, message: string) => {
     if (wsSubscribers.length > 0) {
         wsSubscribers.forEach(ws => {
             try {
+                console.log("Sending message to ws subscriber: " + JSON.stringify({ topic, message }));
                 ws.send(JSON.stringify({ topic, message }));
             } catch (error) {
                 console.error(`Error writing to WebSocket subscriber on topic ${topic}:`, error);

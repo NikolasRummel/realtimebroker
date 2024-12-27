@@ -17,6 +17,7 @@ import {getDashboardData, getMessages, getMessagesOrdered, getTopics, getTotalSu
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {UserIcon} from "lucide-react";
 import MessageChart from "@/components/charts/message-chart";
+import TestPubSubComponent from "@/components/charts/TestPubSubComponent";
 
 export default async function Page() {
 
@@ -62,9 +63,10 @@ export default async function Page() {
                     {JSON.stringify(messages)}
                 </div>
                 <div className={"mb-20"}>
-                    <MessageChart/>
+
                 </div>
 
+                <TestPubSubComponent/>
                 <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
                     <div className="grid auto-rows-min gap-4 md:grid-cols-3">
                         <Card>

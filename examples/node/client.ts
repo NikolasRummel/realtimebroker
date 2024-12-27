@@ -39,17 +39,22 @@ const publishMessages = async () => {
         publishMessage('MAIN', randomString);
 
         // Wait for a random delay between 100ms and 10,000ms
-        const delay = getRandomInt(100, 10000);
+        const delay = getRandomInt(1, 10);
         console.log(`Next message will be published in ${delay}ms`);
 
         // Wait for the random delay before publishing the next message
         await new Promise(resolve => setTimeout(resolve, delay));
 
-        const randomString2 = generateRandomString(10); // Change the length as needed
-        publishMessage('INFO', randomString2);
+
+        const randomObject = {
+            "name": "John Doe",
+            "age": 25,
+            "city": generateRandomString(10)
+        }
+        publishMessage('MAIN', JSON.stringify(randomObject));
 
         // Wait for a random delay between 100ms and 10,000ms
-        const delay2 = getRandomInt(100, 10000);
+        const delay2 = getRandomInt(1, 20);
         console.log(`Next message will be published in ${delay2}ms`);
 
         // Wait for the random delay before publishing the next message
