@@ -1,6 +1,6 @@
 "use client"
 
-import { ChevronRight, type LucideIcon } from "lucide-react"
+import {ChevronRight, Folder, Forward, HomeIcon, type LucideIcon, MoreHorizontal, Trash2} from "lucide-react"
 
 import {
   Collapsible,
@@ -10,13 +10,20 @@ import {
 import {
   SidebarGroup,
   SidebarGroupLabel,
-  SidebarMenu,
+  SidebarMenu, SidebarMenuAction,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
 
 export function NavMain({
   items,
@@ -36,8 +43,16 @@ export function NavMain({
     <SidebarGroup>
       <SidebarGroupLabel>Dashboard</SidebarGroupLabel>
       <SidebarMenu>
+        <SidebarMenuItem >
+          <SidebarMenuButton asChild>
+            <a href={"/"}>
+              <HomeIcon />
+              <span>Home</span>
+            </a>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
         {items.map((item) => (
-          <Collapsible
+            <Collapsible
             key={item.title}
             asChild
             defaultOpen={item.isActive}

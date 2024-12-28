@@ -13,7 +13,6 @@ import {
 } from "@/components/ui/sidebar"
 import MessageChart from "@/components/charts/message-chart";
 import CardsGrid from "@/components/dashboard/cards-grid";
-import {HeartIcon, InfinityIcon} from "lucide-react";
 
 export default async function Page() {
 
