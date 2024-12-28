@@ -1,10 +1,13 @@
 "use client";
 
-import React, { useState, useRef, useCallback } from 'react';
+import React, {useState, useRef, useCallback} from 'react';
 import Highcharts from 'highcharts';
 import HighchartsReact from 'highcharts-react-official';
 import {useMessagesFromTopic} from "@/hooks/pubsub-hooks";
 import {PubSubMessage} from "@/lib/pubsubclient";
+import {Button} from "@/components/ui/button";
+import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
+import {UserIcon} from "lucide-react";
 
 const TIME_SLOTS = {
     SECOND: 1000,
@@ -46,11 +49,6 @@ const MessageChart: React.FC = () => {
             type: 'datetime',
             tickPixelInterval: 1
         },
-        legend: {
-            layout: 'vertical',
-            align: 'right',
-            verticalAlign: 'middle'
-        },
         plotOptions: {
             series: {
                 label: {
@@ -78,18 +76,27 @@ const MessageChart: React.FC = () => {
     };
 
     return (
-        <div>
-            <div>
-                <button onClick={() => setTimeSlotSize(TIME_SLOTS.SECOND)}>Per Second</button>
-                <button onClick={() => setTimeSlotSize(TIME_SLOTS.MINUTE)}>Per Minute</button>
-                <button onClick={() => setTimeSlotSize(TIME_SLOTS.HOUR)}>Per Hour</button>
-            </div>
-            <HighchartsReact
-                highcharts={Highcharts}
-                options={chartOptions}
-                ref={chartComponentRef}
-            />
-        </div>
+        <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium"> </CardTitle>
+                <select
+                    className="border border-gray-300 rounded p-2 "
+                    value={timeSlotSize}
+                    onChange={(e) => setTimeSlotSize(Number(e.target.value))}
+                >
+                    <option value={TIME_SLOTS.SECOND}>Per Second</option>
+                    <option value={TIME_SLOTS.MINUTE}>Per Minute</option>
+                    <option value={TIME_SLOTS.HOUR}>Per Hour</option>
+                </select>
+            </CardHeader>
+            <CardContent>
+                <HighchartsReact
+                    highcharts={Highcharts}
+                    options={chartOptions}
+                    ref={chartComponentRef}
+                />
+            </CardContent>
+        </Card>
     );
 };
 

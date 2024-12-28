@@ -55,6 +55,7 @@ class PubSubClient extends EventEmitter {
                 }
 
                 this.emit(topic, pubSubMessage); // Broadcast to all listeners
+                this.emit("ALL", pubSubMessage); // Broadcast to all listeners
             };
 
             this.ws.onerror = (error) => {
